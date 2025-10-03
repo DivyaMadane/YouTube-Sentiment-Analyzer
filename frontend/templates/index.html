@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Sentiment Analyzer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #667eea 100%);
+      min-height: 100vh;
+      color: #2d3748;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+      color: white;
+    }
+    
+    .header h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .header p {
+      font-size: 1.2rem;
+      opacity: 0.9;
+      font-weight: 400;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      margin-bottom: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 25px 35px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08);
+    }
+    
+    .input-section {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      margin-bottom: 30px;
+    }
+    
+    .input-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: end;
+      margin-top: 25px;
+    }
+    
+    .form-group {
+      flex: 1;
+      min-width: 250px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      color: #4a5568;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 16px 20px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      background: #f8fafc;
+      font-family: inherit;
+    }
+    
+    .form-control:focus {
+      outline: none;
+      border-color: #667eea;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .btn {
+      background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+      color: white;
+      border: none;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 15px rgba(42, 82, 152, 0.4);
+    }
+    
+    .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(42, 82, 152, 0.5);
+    }
+    
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .alert {
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .alert-error {
+      background: #fed7d7;
+      color: #c53030;
+      border: 1px solid #feb2b2;
+    }
+    
+    .alert-loading {
+      background: #bee3f8;
+      color: #2b6cb0;
+      border: 1px solid #90cdf4;
+    }
+    
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid #e2e8f0;
+      border-top: 3px solid #2b6cb0;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .hidden {
+      display: none !important;
+    }
+    
+    .row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 25px;
+      margin-bottom: 30px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .stat-card {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      border-radius: 16px;
+      padding: 25px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-number {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #2d3748;
+    }
+    
+    .stat-label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #718096;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .chart-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 300px;
+      background: #f8fafc;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    
+    .chart-container img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+    
+    .table-container {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .table th {
+      background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+      color: white;
+      padding: 20px 15px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .table td {
+      padding: 16px 15px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    
+    .table tr:hover {
+      background: #f8fafc;
+    }
+    
+    .table tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .sentiment-positive { color: #38a169; font-weight: 600; }
+    .sentiment-negative { color: #e53e3e; font-weight: 600; }
+    .sentiment-neutral { color: #718096; font-weight: 600; }
+    
+    .score-positive { color: #38a169; font-weight: 700; }
+    .score-negative { color: #e53e3e; font-weight: 700; }
+    .score-neutral { color: #718096; font-weight: 500; }
+    
+    .info-section {
+      background: linear-gradient(135deg, #ebf8ff 0%, #e6fffa 100%);
+      border: 1px solid #bee3f8;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 25px;
+    }
+    
+    .info-section h4 {
+      color: #2c5282;
+      font-weight: 600;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .info-section p {
+      color: #2d3748;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+    
+    .video-link {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s ease;
+    }
+    
+    .video-link:hover {
+      color: #5a67d8;
+      text-decoration: underline;
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        padding: 15px;
+      }
+      
+      .header h1 {
+        font-size: 2.2rem;
+      }
+      
+      .header p {
+        font-size: 1.1rem;
+      }
+      
+      .card, .input-section {
+        padding: 25px 20px;
+      }
+      
+      .input-group {
+        flex-direction: column;
+      }
+      
+      .form-group {
+        min-width: 100%;
+      }
+      
+      .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 15px;
+      }
+      
+      .stat-number {
+        font-size: 2rem;
+      }
+      
+      .table-container {
+        overflow-x: auto;
+      }
+      
+      .table {
+        min-width: 700px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <div class="header">
+      <h1><i class="fab fa-youtube"></i> YouTube Sentiment Analyzer</h1>
+      <p>Advanced AI-powered sentiment analysis for YouTube comments using VADER & TextBlob</p>
+    </div>
+
+    <!-- Input Section -->
+    <div class="input-section">
+      <h2 style="margin-bottom: 15px; color: #2d3748; font-size: 1.5rem; font-weight: 600;">
+        <i class="fas fa-link" style="color: #667eea; margin-right: 10px;"></i>
+        Analyze YouTube Video
+      </h2>
+      <p style="color: #718096; margin-bottom: 0;">Enter a YouTube URL to analyze the sentiment of its comments</p>
+      
+      <!-- Alert Messages -->
+      <div id="error-message" class="alert alert-error hidden">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span id="error-text"></span>
+      </div>
+      
+      <div id="loading-message" class="alert alert-loading hidden">
+        <div class="spinner"></div>
+        <div>
+          <div id="loading-status">Analyzing comments, please wait...</div>
+          <div id="loading-substatus" style="font-size: 0.9rem; margin-top: 5px; opacity: 0.8;">This may take a few moments...</div>
+        </div>
+      </div>
+
+      <form id="analysis-form">
+        <div class="input-group">
+          <div class="form-group">
+            <label for="video_input">
+              <i class="fab fa-youtube"></i> YouTube URL
+            </label>
+            <input type="text" id="video_input" class="form-control" 
+                   placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ" required>
+          </div>
+          
+          <div class="form-group" style="flex: 0 0 200px;">
+            <label for="method">
+              <i class="fas fa-brain"></i> Analysis Method
+            </label>
+            <select id="method" class="form-control">
+              <option value="vader" selected>VADER</option>
+              <option value="textblob">TextBlob</option>
+            </select>
+          </div>
+          
+          <div class="form-group" style="flex: 0 0 150px;">
+            <label for="max_comments">
+              <i class="fas fa-hashtag"></i> Max Comments
+            </label>
+            <input type="number" id="max_comments" class="form-control" 
+                   min="25" max="500" step="25" value="100">
+          </div>
+          
+          <div class="form-group" style="flex: 0 0 auto;">
+            <button type="submit" id="analyze-btn" class="btn">
+              <i class="fas fa-chart-line"></i> Analyze
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- How It Works Section -->
+    <div class="card">
+      <h2 style="color: #2d3748; margin-bottom: 25px; display: flex; align-items: center; gap: 12px;">
+        <i class="fas fa-cogs" style="color: #667eea;"></i>
+        How Sentiment Analysis Works
+      </h2>
+      
+      <div class="row" style="margin-bottom: 0;">
+        <div class="info-section" style="margin-bottom: 0;">
+          <h4>
+            <i class="fas fa-brain"></i>
+            VADER Algorithm
+          </h4>
+          <p>
+            <strong>Lexicon-based approach</strong> that uses a dictionary of sentiment-scored words. 
+            Considers context, intensifiers ("very good" vs "good"), punctuation, and capitalization. 
+            <strong>Score Range:</strong> -1 (most negative) to +1 (most positive).
+          </p>
+          <div style="margin-top: 15px; padding: 12px; background: rgba(102, 126, 234, 0.1); border-radius: 8px;">
+            <strong>Example:</strong> "This video is absolutely amazing!!!" → Score: 0.83 (Positive)
+          </div>
+        </div>
+        
+        <div class="info-section" style="margin-bottom: 0;">
+          <h4>
+            <i class="fas fa-language"></i>
+            TextBlob Algorithm
+          </h4>
+          <p>
+            <strong>Machine learning approach</strong> trained on movie reviews. Uses pattern analysis 
+            and grammatical structure. Better for formal text but may struggle with slang and emojis. 
+            <strong>Score Range:</strong> -1 (most negative) to +1 (most positive).
+          </p>
+          <div style="margin-top: 15px; padding: 12px; background: rgba(56, 161, 105, 0.1); border-radius: 8px;">
+            <strong>Example:</strong> "Great tutorial, very helpful" → Score: 0.65 (Positive)
+          </div>
+        </div>
+      </div>
+      
+      <!-- Classification Thresholds -->
+      <div style="margin-top: 25px; padding: 20px; background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%); border-radius: 12px; border: 1px solid #e2e8f0;">
+        <h4 style="color: #2d3748; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-balance-scale"></i>
+          Classification Thresholds
+        </h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+          <div style="text-align: center; padding: 15px; background: linear-gradient(135deg, #48bb78, #38a169); color: white; border-radius: 8px;">
+            <i class="fas fa-smile" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
+            <div style="font-weight: 600;">Positive</div>
+            <div style="font-size: 0.9rem; opacity: 0.9;">Score ≥ 0.05</div>
+          </div>
+          <div style="text-align: center; padding: 15px; background: linear-gradient(135deg, #a0aec0, #718096); color: white; border-radius: 8px;">
+            <i class="fas fa-meh" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
+            <div style="font-weight: 600;">Neutral</div>
+            <div style="font-size: 0.9rem; opacity: 0.9;">-0.05 < Score < 0.05</div>
+          </div>
+          <div style="text-align: center; padding: 15px; background: linear-gradient(135deg, #f56565, #e53e3e); color: white; border-radius: 8px;">
+            <i class="fas fa-frown" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
+            <div style="font-weight: 600;">Negative</div>
+            <div style="font-size: 0.9rem; opacity: 0.9;">Score ≤ -0.05</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Multilingual Processing -->
+      <div style="margin-top: 20px; padding: 20px; background: linear-gradient(135deg, #ebf8ff 0%, #e6fffa 100%); border-radius: 12px; border: 1px solid #bee3f8;">
+        <h4 style="color: #2c5282; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-globe"></i>
+          Multilingual Support
+        </h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; color: #2d3748;">
+          <div>
+            <strong>1. Language Detection</strong><br>
+            <small>Automatically identifies comment language using langdetect library</small>
+          </div>
+          <div>
+            <strong>2. Translation</strong><br>
+            <small>Non-English comments translated to English using Google Translate</small>
+          </div>
+          <div>
+            <strong>3. Analysis</strong><br>
+            <small>Sentiment analysis performed on English text for accuracy</small>
+          </div>
+          <div>
+            <strong>4. Preprocessing</strong><br>
+            <small>Emojis converted to sentiment hints, URLs removed, text cleaned</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Video Info & Download Section -->
+    <div class="row">
+      <div class="card">
+        <h3 style="color: #2d3748; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-info-circle" style="color: #667eea;"></i>
+          Video Information
+        </h3>
+        <div id="video-info">
+          <p style="color: #718096; font-style: italic;">Enter a YouTube URL above to begin analysis</p>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h3 style="color: #2d3748; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-download" style="color: #667eea;"></i>
+          Export Results
+        </h3>
+        <div id="download-section">
+          <p style="color: #718096; font-style: italic;">Complete analysis to enable CSV download</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results section - initially hidden -->
+    <div id="results-section" class="hidden">
+      <!-- Statistics Cards -->
+      <div class="card">
+        <h3 style="color: #2d3748; margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-chart-pie" style="color: #667eea;"></i>
+          Sentiment Overview
+        </h3>
+        <div class="stats-grid" id="stats-kpis">
+          <!-- Stats will be inserted here -->
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="row">
+        <div class="card">
+          <h3 style="color: #2d3748; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-chart-pie" style="color: #667eea;"></i>
+            Sentiment Distribution
+          </h3>
+          <div id="pie-chart" class="chart-container">
+            <p style="color: #718096; font-style: italic;">Chart will appear here...</p>
+          </div>
+        </div>
+        
+        <div class="card">
+          <h3 style="color: #2d3748; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-chart-bar" style="color: #667eea;"></i>
+            Sentiment Counts
+          </h3>
+          <div id="bar-chart" class="chart-container">
+            <p style="color: #718096; font-style: italic;">Chart will appear here...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- WordClouds Section -->
+      <div class="row">
+        <div class="card">
+          <h3 style="color: #38a169; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-smile" style="color: #38a169;"></i>
+            Positive Comments Cloud
+          </h3>
+          <div id="positive-wordcloud" class="chart-container">
+            <p style="color: #718096; font-style: italic;">WordCloud will appear here...</p>
+          </div>
+        </div>
+        
+        <div class="card">
+          <h3 style="color: #e53e3e; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-frown" style="color: #e53e3e;"></i>
+            Negative Comments Cloud
+          </h3>
+          <div id="negative-wordcloud" class="chart-container">
+            <p style="color: #718096; font-style: italic;">WordCloud will appear here...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comments Table -->
+      <div class="card">
+        <h3 style="color: #2d3748; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-comments" style="color: #667eea;"></i>
+          Detailed Comment Analysis
+        </h3>
+        
+        <div class="info-section">
+          <h4>
+            <i class="fas fa-info-circle"></i>
+            Understanding Sentiment Scores
+          </h4>
+          <p>
+            <strong>Score Range:</strong> -1.0 (most negative) to +1.0 (most positive) • 
+            <strong>Classification:</strong> ≥0.05 = Positive, ≤-0.05 = Negative, between = Neutral
+          </p>
+        </div>
+        
+        <div class="table-container">
+          <table class="table" id="comments-table">
+            <thead>
+              <tr>
+                <th><i class="fas fa-calendar"></i> Published</th>
+                <th><i class="fas fa-user"></i> Author</th>
+                <th><i class="fas fa-thumbs-up"></i> Likes</th>
+                <th><i class="fas fa-comment-dots"></i> Comment</th>
+                <th><i class="fas fa-smile"></i> Sentiment</th>
+                <th title="Confidence score used to classify sentiment"><i class="fas fa-chart-line"></i> Score</th>
+              </tr>
+            </thead>
+            <tbody id="comments-tbody">
+              <!-- Comments will be inserted here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    console.log('JavaScript loaded');
+    
+    document.getElementById('analysis-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      console.log('Form submitted');
+      
+      const videoInput = document.getElementById('video_input').value.trim();
+      const method = document.getElementById('method').value;
+      const maxComments = parseInt(document.getElementById('max_comments').value);
+      
+      console.log('Form data:', { videoInput, method, maxComments });
+      
+      if (!videoInput) {
+        showError('Please enter a YouTube URL');
+        return;
+      }
+      
+      // Show loading state
+      showLoading(true);
+      hideError();
+      hideResults();
+      
+      try {
+        console.log('Sending request to /analyze');
+        console.log('Request payload:', {
+          video_input: videoInput,
+          method: method,
+          max_comments: maxComments
+        });
+        
+        const response = await fetch('/analyze', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            video_input: videoInput,
+            method: method,
+            max_comments: maxComments
+          })
+        });
+        
+        console.log('Response received');
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        console.log('Response ok:', response.ok);
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        console.log('Content-Type:', contentType);
+        
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          console.error('Non-JSON response received:', text);
+          showLoading(false);
+          showError('Server returned non-JSON response: ' + text.substring(0, 200));
+          return;
+        }
+        
+        const data = await response.json();
+        console.log('Response data type:', typeof data);
+        console.log('Response data keys:', data ? Object.keys(data) : 'null');
+        console.log('Full response data:', data);
+        
+        showLoading(false);
+        
+        if (!response.ok) {
+          console.error('HTTP error response:', response.status, data);
+          showError(data.error || `HTTP ${response.status}: An error occurred`);
+          return;
+        }
+        
+        if (data && data.success) {
+          console.log('Success response received, displaying results');
+          displayResults(data);
+        } else {
+          console.error('Response indicates failure:', data);
+          showError(data?.error || 'Analysis failed - no success flag');
+        }
+        
+      } catch (error) {
+        console.error('Fetch error:', error);
+        showLoading(false);
+        showError('Network error: ' + error.message);
+      }
+    });
+    
+    function showError(message) {
+      const errorDiv = document.getElementById('error-message');
+      const errorText = document.getElementById('error-text');
+      errorText.textContent = message;
+      errorDiv.classList.remove('hidden');
+    }
+    
+    function hideError() {
+      document.getElementById('error-message').classList.add('hidden');
+    }
+    
+    function showLoading(show) {
+      const loadingDiv = document.getElementById('loading-message');
+      if (show) {
+        loadingDiv.classList.remove('hidden');
+        document.getElementById('analyze-btn').disabled = true;
+      } else {
+        loadingDiv.classList.add('hidden');
+        document.getElementById('analyze-btn').disabled = false;
+      }
+    }
+    
+    function hideResults() {
+      document.getElementById('results-section').classList.add('hidden');
+    }
+    
+    function showResults() {
+      document.getElementById('results-section').classList.remove('hidden');
+    }
+    
+    function displayResults(data) {
+      console.log('=== DISPLAYING RESULTS START ===');
+      console.log('Data received:', data);
+      console.log('Video ID:', data.video_id);
+      console.log('Stats:', data.stats);
+      console.log('Charts available:', data.charts ? Object.keys(data.charts) : 'none');
+      console.log('Table records count:', data.table_records ? data.table_records.length : 'none');
+      
+      try {
+        // Update video info
+        console.log('Updating video info...');
+        const videoInfo = document.getElementById('video-info');
+        if (!videoInfo) {
+          console.error('video-info element not found!');
+          return;
+        }
+        videoInfo.innerHTML = `
+          <div style="padding: 15px; background: linear-gradient(135deg, #e6fffa 0%, #b2f5ea 100%); border-radius: 12px; border: 1px solid #38a169;">
+            <p style="margin: 0 0 10px 0; color: #38a169; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-check-circle"></i>
+              Video ID: ${data.video_id}
+            </p>
+            <a href="https://www.youtube.com/watch?v=${data.video_id}" target="_blank" class="video-link" style="display: inline-flex; align-items: center; gap: 8px;">
+              <i class="fab fa-youtube"></i>
+              Watch on YouTube
+            </a>
+          </div>
+        `;
+        console.log('Video info updated successfully');
+      
+        // Update download section
+        console.log('Updating download section...');
+        const downloadSection = document.getElementById('download-section');
+        if (!downloadSection) {
+          console.error('download-section element not found!');
+        } else {
+          const videoInput = encodeURIComponent(document.getElementById('video_input').value);
+          const method = document.getElementById('method').value;
+          const maxComments = document.getElementById('max_comments').value;
+          downloadSection.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+              <div style="padding: 15px; background: linear-gradient(135deg, #f0f8ff 0%, #e1f5fe 100%); border-radius: 12px; border: 1px solid #667eea;">
+                <p style="margin: 0 0 12px 0; color: #2d3748; font-weight: 500;">
+                  <i class="fas fa-file-csv" style="color: #667eea; margin-right: 8px;"></i>
+                  Export complete analysis results
+                </p>
+                <a href="/download.csv?video_input=${videoInput}&method=${method}&max_comments=${maxComments}" 
+                   class="btn" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; font-size: 14px;">
+                  <i class="fas fa-download"></i>
+                  Download CSV Report
+                </a>
+              </div>
+            </div>
+          `;
+          console.log('Download section updated successfully');
+        }
+        
+        // Update stats
+        console.log('Updating stats...');
+        const statsKpis = document.getElementById('stats-kpis');
+        if (!statsKpis) {
+          console.error('stats-kpis element not found!');
+        } else {
+          const totalPercent = data.stats.total > 0 ? data.stats.total : 1;
+          const positivePercent = ((data.stats.positive / totalPercent) * 100).toFixed(1);
+          const neutralPercent = ((data.stats.neutral / totalPercent) * 100).toFixed(1);
+          const negativePercent = ((data.stats.negative / totalPercent) * 100).toFixed(1);
+          
+          statsKpis.innerHTML = `
+            <div class="stat-card" style="background: linear-gradient(135deg, #ff8a00 0%, #e52e71 100%); color: white;">
+              <div class="stat-number">${data.stats.total}</div>
+              <div class="stat-label" style="color: rgba(255,255,255,0.9);"><i class="fas fa-comments"></i> Total Comments</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); color: white;">
+              <div class="stat-number">${data.stats.positive}</div>
+              <div class="stat-label" style="color: rgba(255,255,255,0.9);"><i class="fas fa-smile"></i> Positive (${positivePercent}%)</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #a0aec0 0%, #718096 100%); color: white;">
+              <div class="stat-number">${data.stats.neutral}</div>
+              <div class="stat-label" style="color: rgba(255,255,255,0.9);"><i class="fas fa-meh"></i> Neutral (${neutralPercent}%)</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%); color: white;">
+              <div class="stat-number">${data.stats.negative}</div>
+              <div class="stat-label" style="color: rgba(255,255,255,0.9);"><i class="fas fa-frown"></i> Negative (${negativePercent}%)</div>
+            </div>
+          `;
+          console.log('Stats updated successfully');
+        }
+        
+        // Update charts
+        console.log('Updating charts...');
+        const pieChart = document.getElementById('pie-chart');
+        const barChart = document.getElementById('bar-chart');
+        const posWordcloud = document.getElementById('positive-wordcloud');
+        const negWordcloud = document.getElementById('negative-wordcloud');
+        
+        if (pieChart) {
+          pieChart.innerHTML = data.charts.pie ?
+            `<img alt="pie" src="data:image/png;base64,${data.charts.pie}" style="max-width:100%">` :
+            '<p class="muted">Not enough data for a pie chart.</p>';
+          console.log('Pie chart updated', data.charts.pie ? 'with image' : 'with message');
+        }
+        
+        if (barChart) {
+          barChart.innerHTML = data.charts.bar ?
+            `<img alt="bar" src="data:image/png;base64,${data.charts.bar}" style="max-width:100%">` :
+            '<p class="muted">Not enough data for a bar chart.</p>';
+          console.log('Bar chart updated', data.charts.bar ? 'with image' : 'with message');
+        }
+        
+        if (posWordcloud) {
+          posWordcloud.innerHTML = data.charts.wc_pos ?
+            `<img alt="wc_pos" src="data:image/png;base64,${data.charts.wc_pos}" style="max-width:100%">` :
+            '<p class="muted">Not enough positive comments to generate a word cloud.</p>';
+          console.log('Positive wordcloud updated', data.charts.wc_pos ? 'with image' : 'with message');
+        }
+        
+        if (negWordcloud) {
+          negWordcloud.innerHTML = data.charts.wc_neg ?
+            `<img alt="wc_neg" src="data:image/png;base64,${data.charts.wc_neg}" style="max-width:100%">` :
+            '<p class="muted">Not enough negative comments to generate a word cloud.</p>';
+          console.log('Negative wordcloud updated', data.charts.wc_neg ? 'with image' : 'with message');
+        }
+        
+        // Update comments table
+        console.log('Updating comments table...');
+        const commentsTable = document.getElementById('comments-tbody');
+        if (!commentsTable) {
+          console.error('comments-tbody element not found!');
+        } else {
+          const commentsHtml = data.table_records.map(record => {
+            // Format sentiment score to 3 decimal places
+            const formatScore = (score) => {
+              if (score === null || score === undefined || score === '') return 'N/A';
+              const numScore = parseFloat(score);
+              if (isNaN(numScore)) return 'N/A';
+              return numScore.toFixed(3);
+            };
+            
+            // Get color class based on sentiment score
+            const getScoreClass = (score, sentiment) => {
+              if (sentiment === 'Positive') return 'color: #27ae60; font-weight: bold;';
+              if (sentiment === 'Negative') return 'color: #e74c3c; font-weight: bold;';
+              return 'color: #95a5a6;';
+            };
+            
+            return `
+              <tr>
+                <td>${record.published_at || ''}</td>
+                <td>${record.author || ''}</td>
+                <td>${record.like_count || '0'}</td>
+                <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${record.text || ''}">${record.text || ''}</td>
+                <td style="font-weight: bold;">${record.sentiment || ''}</td>
+                <td style="${getScoreClass(record.sentiment_score, record.sentiment)}" title="Raw confidence score: ${record.sentiment_score}">${formatScore(record.sentiment_score)}</td>
+              </tr>
+            `;
+          }).join('');
+          commentsTable.innerHTML = commentsHtml;
+          console.log(`Comments table updated with ${data.table_records.length} records`);
+        }
+        
+        // Show results section
+        console.log('Showing results section...');
+        showResults();
+        console.log('=== DISPLAYING RESULTS COMPLETE ===');
+        
+      } catch (error) {
+        console.error('Error in displayResults:', error);
+        showError('Failed to display results: ' + error.message);
+      }
+    }
+  </script>
+</body>
+</html>
