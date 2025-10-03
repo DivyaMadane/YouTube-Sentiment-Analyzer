@@ -26,7 +26,7 @@ A powerful web application that analyzes the sentiment of YouTube video comments
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/DivyaMadane/YouTube-Sentiment-Analyzer.git
    cd youtube_sentiment_analyzer
    ```
 
