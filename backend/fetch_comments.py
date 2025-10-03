@@ -13,7 +13,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 #API key
-API_KEY: str = "AIzaSyAQ4l9s5lHbh4WOAjBaBCXH9tTn-NalKIw"
+API_KEY: str = "YOUR_API_KEY_HERE"
 
 
 def extract_video_id(url_or_id: str) -> Optional[str]:
